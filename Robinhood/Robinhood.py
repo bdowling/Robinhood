@@ -1339,7 +1339,6 @@ class Robinhood:
         orders = self.order_history(instrument=instrument)
         res = {'cancelled':[], 'error':[]}
         stoppedOrderStates = (OrderState.FILLED, OrderState.CANCELLED, OrderState.FAILED, OrderState.REJECTED)
-        print(stoppedOrderStates)
         for order in orders['results']:
             if OrderState(order['state']) not in stoppedOrderStates:
                 r = self.cancel_order(oid=order['id'])
