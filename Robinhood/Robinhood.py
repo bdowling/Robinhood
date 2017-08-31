@@ -896,7 +896,6 @@ class Robinhood:
             data['instrument'] = instrument
         res = self.session.get(self.endpoints['orders'], params=data)
         res.raise_for_status()
-
         return res.json()
 
 
@@ -1461,7 +1460,10 @@ class Robinhood:
         """
         data = {}
         data['oid'] = oid
-        return self.session.post(self.endpoints['cancel'].format(**data))
+        res = self.session.post(self.endpoints['cancel'].format(**data))
+        res.raise_for_status()
+        return res
+
 
     def cancel_orders_all(self,instrument=None):
         """
