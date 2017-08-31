@@ -31,6 +31,24 @@ class Transaction(Enum):
     BUY = 'buy'
     SELL = 'sell'
 
+class Trigger(Enum):
+    """enum for buy/sell orders"""
+    IMMEDIATE = 'immediate'
+    STOP = 'stop'
+
+class Order(Enum):
+    """enum for buy/sell orders"""
+    MARKET = 'market'
+    LIMIT = 'limit'
+
+class TimeForce(Enum):
+    """enum for buy/sell orders"""
+    GTC = 'gtc'
+    GFD = 'gfd'
+    IOC = 'ioc'
+    FOK = 'fok'
+    OPG = 'opg'
+
 class OrderState(Enum):
     """enum for order states"""
     QUEUED = "queued"
@@ -907,7 +925,6 @@ class Robinhood:
 
         return self.session.get(self.endpoints['positions']).json()
 
-
     def securities_owned(self):
         """Returns list of securities' symbols that the user has shares in
 
@@ -915,7 +932,15 @@ class Robinhood:
                 (:object: `dict`): Non-zero positions
         """
 
-        return self.session.get(self.endpoints['positions']+'?nonzero=true').json()
+        Args:
+            instrument (dict): the RH URL and symbol in dict for the instrument to be traded
+            quantity (int): quantity of stocks in order
+            bid_price (float): price for order
+            stop_price (float): price at which order is placed
+            transaction (:enum:`Transaction`): BUY or SELL enum
+            trigger (:enum:`Trigger`): IMMEDIATE or STOP enum
+            order (:enum:`Order`): MARKET or LIMIT emum
+            time_in_force (:enum:`TIME_IN_FORCE`): GFD or GTC (Good for day or Good 'til Cancelled)
 
 
     ###########################################################################
@@ -923,14 +948,16 @@ class Robinhood:
     ###########################################################################
 
     def place_order(self,
-                    instrument,
-                    quantity=1,
-                    bid_price=0.0,
-                    transaction=None,
-                    trigger='immediate',
-                    order='market',
-                    time_in_force = 'gfd'):
-        """Place an order with Robinhood
+            instrument,
+            quantity,
+            transaction,
+            bid_price=None,
+            stop_price=None,
+            trigger=Trigger('immediate'),
+            order=Order('market'),
+            time_in_force = TimeForce('gfd')
+        ):
+        """place an order with Robinhood
 
             Notes:
                 OMFG TEST THIS PLEASE!
@@ -953,33 +980,53 @@ class Robinhood:
         """
 
         if isinstance(transaction, str):
-            transaction = Transaction(transaction)
+            transaction = Transaction(transaction.lower())
+        if isinstance(trigger, str):
+            trigger = Trigger(trigger.lower())
+        if isinstance(order, str):
+            order = Order(order.lower())
+        if isinstance(time_in_force,str):
+            time_in_force = TimeForce(time_in_force.lower())
 
-        if not bid_price:
+        # NOT SURE why bid_price is being assumed here, this could be bad.
+
+        if order == Order.LIMIT and bid_price is None:
+            raise ValueError("Order.LIMIT without bid_price")
+
+        if bid_price is not None and not order == Order.LIMIT:
+            raise ValueError("bid_price without Order.LIMIT")
+
+        # If Order.MARKET the we still need to pass RH a price, RH places market orders
+        # automatically as limit orders with a 5% buffer
+        if not bid_price and order == Order.MARKET:
             bid_price = self.quote_data(instrument['symbol'])['bid_price']
 
         payload = {
             'account': self.get_account()['url'],
             'instrument': unquote(instrument['url']),
+            'quantity': int(quantity),
             'price': float(bid_price),
-            'quantity': quantity,
-            'side': transaction.name.lower(),
+
+            'side': transaction.value,
             'symbol': instrument['symbol'],
-            'time_in_force': time_in_force.lower(),
-            'trigger': trigger,
-            'type': order.lower()
+            'time_in_force': time_in_force.value,
+            'trigger': trigger.value,
+            'type': order.value
         }
 
-        #data = 'account=%s&instrument=%s&price=%f&quantity=%d&side=%s&symbol=%s#&time_in_force=gfd&trigger=immediate&type=market' % (
-        #    self.get_account()['url'],
-        #    urllib.parse.unquote(instrument['url']),
-        #    float(bid_price),
-        #    quantity,
-        #    transaction,
-        #    instrument['symbol']
-        #)
+        if trigger == Trigger.STOP:
+            if stop_price is not None:
+                payload['stop_price'] = float(stop_price)
+            else:
+                raise ValueError("Trigger.STOP without stop_price")
+        elif stop_price is not None:
+            raise ValueError("stop_price without Trigger.STOP")
 
-        res = self.session.post(self.endpoints['orders'], data=payload)
+        # res = payload
+        res = self.session.post(
+            self.endpoints['orders'],
+            data=payload
+        )
         res.raise_for_status()
 
         return res
