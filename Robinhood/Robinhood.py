@@ -392,7 +392,7 @@ class Robinhood:
             stock,
             interval,
             span,
-            bounds=Bounds.REGULAR
+            bounds='regular'
         ):
         """fetch historical data for stock
 
@@ -417,11 +417,8 @@ class Robinhood:
             Returns:
                 (:obj:`dict`) values returned from `historicals` endpoint
         """
-        if type(stock) is str:
-            stock = [stock]
-
-        if isinstance(bounds, str):  # recast to Enum
-            bounds = Bounds(bounds)
+        if isinstance(bounds, str): #recast to Enum
+            bounds = self.Bounds(bounds)
 
         params = {
             'symbols': ','.join(stock).upper(),
