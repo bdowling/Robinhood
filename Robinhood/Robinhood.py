@@ -377,7 +377,7 @@ class Robinhood:
             stock = input("Symbol: ")
 
         data = self.quote_data(stock)
-        print(data)
+
         res = []
 
         # Handles the case of multple tickers
@@ -418,7 +418,6 @@ class Robinhood:
 
         res = {}
         for quote in data['results']:
-            print(type(quote))
             if not isinstance(quote,dict):
                 raise Warning("Returned Quote was not a dict")
 
