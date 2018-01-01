@@ -224,8 +224,9 @@ class Robinhood:
             res = self.session.get(
                 self.endpoints['instrumentsplits'].format(instrumentid=instrumentid)
             )
-        res.raise_for_status()
-        return res.json()
+            res.raise_for_status()
+            return res.json()
+        raise ValueError("Invalid instrumentid passed")
 
     def quote_data(self, stock):
         """fetch single stock quote
