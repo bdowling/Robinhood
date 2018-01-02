@@ -446,8 +446,8 @@ class Robinhood:
             'symbols': ','.join(stock).upper(),
             'interval': interval,
             'span': span,
-            'bounds': bounds.name.lower()
-        }
+            'bounds': bounds.value
+                    }
         res = self.session.get(
             self.endpoints['historicals'],
             params=params
