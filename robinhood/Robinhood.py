@@ -331,10 +331,9 @@ class Robinhood:
         try:
             res = requests.get(url)
             self._raise_for_status(res)
+            return res.json()["results"]
         except requests.exceptions.HTTPError:
             raise robinhood.exceptions.InvalidTickerSymbol()
-
-        return res.json()["results"]
 
     def get_quote_list(self,
                        stock,
