@@ -13,6 +13,7 @@ import getpass
 import requests
 import six
 
+import robinhood
 
 class Robinhood:
     """Wrapper class for fetching/parsing Robinhood endpoints """
@@ -56,8 +57,6 @@ class Robinhood:
 
     logger = logging.getLogger('Robinhood')
     logger.addHandler(logging.NullHandler())
-
-    from . import exceptions
 
     class Bounds(Enum):
         """enum for bounds in `historicals` endpoint"""
@@ -182,7 +181,7 @@ class Robinhood:
 
         if 'mfa_required' in data:                     # pragma: no cover
             # requires a second call to enable 2FA
-            raise self.exceptions.TwoFactorRequired()
+            raise robinhood.exceptions.TwoFactorRequired()
 
         if 'token' in data:
             self.auth_token = data['token']
@@ -305,7 +304,7 @@ class Robinhood:
             res = requests.get(url)
             self.raiseForStatus(res)
         except requests.exceptions.HTTPError:
-            raise self.exceptions.InvalidTickerSymbol()
+            raise robinhood.exceptions.InvalidTickerSymbol()
 
         return res.json()
 
@@ -333,7 +332,7 @@ class Robinhood:
             res = requests.get(url)
             self.raiseForStatus(res)
         except requests.exceptions.HTTPError:
-            raise self.exceptions.InvalidTickerSymbol()
+            raise robinhood.exceptions.InvalidTickerSymbol()
 
         return res.json()["results"]
 
@@ -751,7 +750,7 @@ class Robinhood:
             res = requests.get(url)
             self.raiseForStatus(res)
         except requests.exceptions.HTTPError:
-            raise self.exceptions.InvalidTickerSymbol()
+            raise robinhood.exceptions.InvalidTickerSymbol()
 
         return res.json()
 

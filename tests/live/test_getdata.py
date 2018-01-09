@@ -6,10 +6,10 @@ import pytest
 from flaky import flaky
 import requests
 
-from Robinhood import Robinhood
+import robinhood
+from robinhood.Robinhood import Robinhood
+
 import helpers
-if six.PY2:
-    from Robinhood import RH_exception
 
 HERE = path.abspath(path.dirname(__file__))
 ROOT = path.dirname(HERE)
@@ -56,7 +56,7 @@ class TestQuoteHelpers:
 
     def test_validate_fail_quote(self):
         """validate bad-path exception"""
-        with pytest.raises(Robinhood.exceptions.InvalidTickerSymbol):
+        with pytest.raises(robinhood.exceptions.InvalidTickerSymbol):
             data = self.rh_obj.quote_data(self.fake_ticker)
 
     def test_validate_get_quote(self):
@@ -153,6 +153,7 @@ class TestFundamentalsHelpers:
             config
         )
         TEST_FUNDAMENTAL['volume'] = 'OVERWRITE'    #flaky value
+
     @flaky
     def test_validate_fundamental(self):
         """validate fetcher"""
@@ -162,7 +163,7 @@ class TestFundamentalsHelpers:
 
     def test_validate_fail_fundamental(self):
         """validate bad-path exception"""
-        with pytest.raises(Robinhood.exceptions.InvalidTickerSymbol):
+        with pytest.raises(robinhood.exceptions.InvalidTickerSymbol):
             data = self.rh_obj.get_fundamentals(self.fake_ticker)
 
     @flaky
@@ -182,6 +183,7 @@ class TestURLWrapper:
     """make sure get_url returns expected behavior"""
     base_url = 'https://api.robinhood.com/'
     rh_obj = Robinhood()
+
     def test_url_endpoint(self):
         """fetch url directly"""
         global TEST_URL_RESULT
@@ -196,64 +198,69 @@ class TestURLWrapper:
         data = self.rh_obj.get_url(self.base_url)
         assert data == TEST_URL_RESULT
 
-def test_get_news(config=CONFIG):
-    """test `get_news` endpoint"""
-    test_ticker = CONFIG.get('FETCH', 'test_ticker')
-    raw_news = helpers.fetch_REST_directly(
-        'news',
-        test_ticker,
-        config
-    )
-    get_news = Robinhood().get_news(test_ticker)
+class TestOthers:
+    """wrapper to other methods available without login"""
+    rh_obj = Robinhood()
 
-    assert get_news == raw_news
+    def test_get_news(self,config=CONFIG):
+        """test `get_news` endpoint"""
+        test_ticker = CONFIG.get('FETCH', 'test_ticker')
+        raw_news = helpers.fetch_REST_directly(
+            'news',
+            test_ticker,
+            config
+        )
+        get_news = self.rh_obj.get_news(test_ticker)
 
-def test_intstruments(config=CONFIG):
-    """test `instruments` endpoint"""
-    #TODO: this test is bad, just repeat of code inside endpoint
-    params = {
-        'symbol': CONFIG.get('FETCH', 'test_ticker')
-    }
-    headers = {
-        'User-Agent': CONFIG.get('FETCH', 'user_agent')
-    }
-    address = Robinhood().endpoints['instruments']
-    res = requests.get(
-        address,
-        headers=headers,
-        params=params
-    )
-    res.raise_for_status()
+        assert get_news == raw_news
 
-    hard_data = res.json()['results']
-
-    data = Robinhood().instruments(symbol=CONFIG.get('FETCH', 'test_ticker'))
-
-    assert data == hard_data
-
-def test_get_historical_data(config=CONFIG):
-    headers = {
-        'User-Agent': CONFIG.get('FETCH', 'user_agent')
-    }
-
-    address = Robinhood().endpoints['historicals']
-    res = requests.get(
-        address,
-        headers=headers,
-        params={
-            'symbols': ','.join([CONFIG.get('FETCH', 'test_ticker')]).upper(),
-            'interval': 'day',
-            'span': 'year',
-            'bounds': 'regular'
+    @flaky
+    def test_instruments(self,config=CONFIG):
+        """test `instruments` endpoint"""
+        #TODO: this test is bad, just repeat of code inside endpoint
+        params = {
+            'symbol': CONFIG.get('FETCH', 'test_ticker')
         }
-    )
+        headers = {
+            'User-Agent': CONFIG.get('FETCH', 'user_agent')
+        }
+        address = self.rh_obj.endpoints['instruments']
+        res = requests.get(
+            address,
+            headers=headers,
+            params=params
+        )
+        res.raise_for_status()
 
-    hard_data = res.json()   # Not sure why ['results'] was here, as get_historical_quotes returns the raw json
+        hard_data = res.json()['results']
 
-    data = Robinhood().get_historical_quotes(
-        [CONFIG.get('FETCH', 'test_ticker')],
-        'day',
-        'year'
-    )
+        data = self.rh_obj.instruments(symbol=CONFIG.get('FETCH', 'test_ticker'))
 
-    assert data == hard_data
+        assert data == hard_data
+
+    def test_get_historical_data(self,config=CONFIG):
+        headers = {
+            'User-Agent': CONFIG.get('FETCH', 'user_agent')
+        }
+
+        address = self.rh_obj.endpoints['historicals']
+        res = requests.get(
+            address,
+            headers=headers,
+            params={
+                'symbols': ','.join([CONFIG.get('FETCH', 'test_ticker')]).upper(),
+                'interval': 'day',
+                'span': 'year',
+                'bounds': 'regular'
+            }
+        )
+
+        hard_data = res.json()   # Not sure why ['results'] was here, as get_historical_quotes returns the raw json
+
+        data = self.rh_obj.get_historical_quotes(
+            [CONFIG.get('FETCH', 'test_ticker')],
+            'day',
+            'year'
+        )
+
+        assert data == hard_data

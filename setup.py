@@ -79,7 +79,7 @@ class PyTest(TestCommand):
             'tests',
             '--cov=Robinhood/',
             '--cov-report=term-missing',
-	    '--pep8'
+            '--pep8'
         ]    #load defaults here
 
     def run_tests(self):
