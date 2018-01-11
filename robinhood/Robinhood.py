@@ -14,6 +14,7 @@ import requests
 import six
 
 import robinhood
+from decimal import Decimal
 
 class Robinhood:
     """Wrapper class for fetching/parsing Robinhood endpoints """
@@ -524,7 +525,7 @@ class Robinhood:
                 stock (str): stock ticker
 
             Returns:
-                (float): ask price
+                (Decimal): ask price
         """
 
         return self.get_quote_list(stock, 'ask_price')
@@ -554,7 +555,7 @@ class Robinhood:
                 stock (str): stock ticker
 
             Returns:
-                (float): bid price
+                (Decimal): bid price
         """
 
         return self.get_quote_list(stock, 'bid_price')
@@ -584,7 +585,7 @@ class Robinhood:
                 stock (str): stock ticker
 
             Returns:
-                (float): last trade price
+                (Decimal): last trade price
         """
 
         return self.get_quote_list(stock, 'last_trade_price')
@@ -599,7 +600,7 @@ class Robinhood:
                 stock (str): stock ticker
 
             Returns:
-                (float): previous closing price
+                (Decimal): previous closing price
         """
 
         return self.get_quote_list(stock, 'previous_close')
@@ -629,7 +630,7 @@ class Robinhood:
                 stock (str): stock ticker
 
             Returns:
-                (float): adjusted previous closing price
+                (Decimal): adjusted previous closing price
         """
 
         return self.get_quote_list(stock, 'adjusted_previous_close')
@@ -774,48 +775,48 @@ class Robinhood:
         """Wrapper for portfolios
 
             Returns:
-                (float): `adjusted_equity_previous_close` value
+                (Decimal): `adjusted_equity_previous_close` value
 
         """
 
-        return float(self.portfolios()['adjusted_equity_previous_close'])
+        return Decimal(self.portfolios()['adjusted_equity_previous_close'])
 
     def equity(self):
         """Wrapper for portfolios
 
             Returns:
-                (float): `equity` value
+                (Decimal): `equity` value
         """
 
-        return float(self.portfolios()['equity'])
+        return Decimal(self.portfolios()['equity'])
 
     def equity_previous_close(self):
         """Wrapper for portfolios
 
             Returns:
-                (float): `equity_previous_close` value
+                (Decimal): `equity_previous_close` value
         """
 
-        return float(self.portfolios()['equity_previous_close'])
+        return Decimal(self.portfolios()['equity_previous_close'])
 
     def excess_margin(self):
         """Wrapper for portfolios
 
             Returns:
-                (float): `excess_margin` value
+                (Decimal): `excess_margin` value
         """
 
-        return float(self.portfolios()['excess_margin'])
+        return Decimal(self.portfolios()['excess_margin'])
 
     def extended_hours_equity(self):
         """Wrapper for portfolios
 
             Returns:
-                (float): `extended_hours_equity` value
+                (Decimal): `extended_hours_equity` value
         """
 
         try:
-            return float(self.portfolios()['extended_hours_equity'])
+            return Decimal(self.portfolios()['extended_hours_equity'])
         except TypeError:
             return None
 
@@ -823,11 +824,11 @@ class Robinhood:
         """Wrapper for portfolios
 
             Returns:
-                (float): `extended_hours_market_value` value
+                (Decimal): `extended_hours_market_value` value
         """
 
         try:
-            return float(self.portfolios()['extended_hours_market_value'])
+            return Decimal(self.portfolios()['extended_hours_market_value'])
         except TypeError:
             return None
 
@@ -835,28 +836,28 @@ class Robinhood:
         """Wrapper for portfolios
 
             Returns:
-                (float): `last_core_equity` value
+                (Decimal): `last_core_equity` value
         """
 
-        return float(self.portfolios()['last_core_equity'])
+        return Decimal(self.portfolios()['last_core_equity'])
 
     def last_core_market_value(self):
         """Wrapper for portfolios
 
             Returns:
-                (float): `last_core_market_value` value
+                (Decimal): `last_core_market_value` value
         """
 
-        return float(self.portfolios()['last_core_market_value'])
+        return Decimal(self.portfolios()['last_core_market_value'])
 
     def market_value(self):
         """Wrapper for portfolios
 
             Returns:
-                (float): `market_value` value
+                (Decimal): `market_value` value
         """
 
-        return float(self.portfolios()['market_value'])
+        return Decimal(self.portfolios()['market_value'])
 
     def instrument_url(self, instrument=None):
         """
@@ -963,8 +964,8 @@ class Robinhood:
             Args:
                 instrument (dict): the RH URL and symbol in dict for the instrument to be traded
                 quantity (int): quantity of stocks in order
-                bid_price (float): price for order
-                stop_price (float): price at which order is placed
+                bid_price (Decimal): price for order
+                stop_price (Decimal): price at which order is placed
                 transaction (:enum:`Transaction`): BUY or SELL
                 trigger (:enum:`Trigger`): IMMEDIATE or STOP
                 order (:enum:`Order`): MARKET or LIMIT
@@ -988,13 +989,13 @@ class Robinhood:
         # If Order.MARKET then we still need to pass RH a price, RH places market orders
         # automatically as limit orders with a 5% buffer
         if not bid_price and order == self.Order.MARKET:
-            bid_price = bid_price(instrument['symbol'])
+            bid_price = Decimal(self.bid_price(instrument['symbol'])[0][0])
 
         payload = {
             'account': self.get_account()['url'],
             'instrument': unquote(instrument['url']),
             'quantity': int(quantity),
-            'price': float(bid_price),
+            'price': Decimal(bid_price),
 
             'side': transaction.value,
             'symbol': instrument['symbol'],
@@ -1005,7 +1006,7 @@ class Robinhood:
 
         if trigger == self.Trigger.STOP:
             if stop_price is not None:
-                payload['stop_price'] = float(stop_price)
+                payload['stop_price'] = Decimal(stop_price)
             else:
                 raise ValueError("Trigger.STOP without stop_price")
         elif stop_price is not None:
@@ -1031,7 +1032,7 @@ class Robinhood:
             Args:
                 instrument (dict): the RH URL and symbol in dict for the instrument to be traded
                 quantity (int): quantity of stocks in order
-                bid_price (float): price for order
+                bid_price (Decimal): price for order
 
             Returns:
                 (:obj:`requests.request`): result from `orders` put command
@@ -1049,7 +1050,7 @@ class Robinhood:
             Args:
                 instrument (dict): the RH URL and symbol in dict for the instrument to be traded
                 quantity (int): quantity of stocks in order
-                bid_price (float): price for order
+                bid_price (Decimal): price for order
 
             Returns:
                 (:obj:`requests.request`): result from `orders` put command
@@ -1104,7 +1105,7 @@ class Robinhood:
                 instrument_URL (str): The RH URL of the instrument
                 symbol (str): The ticker symbol of the instrument
                 time_in_force (str): 'GFD' or 'GTC' (day or until cancelled)
-                price (float): The max price you're willing to pay per share
+                price (Decimal): The max price you're willing to pay per share
                 quantity (int): Number of shares to buy
 
             Returns:
@@ -1135,7 +1136,7 @@ class Robinhood:
                 instrument_URL (str): The RH URL of the instrument
                 symbol (str): The ticker symbol of the instrument
                 time_in_force (str): 'GFD' or 'GTC' (day or until cancelled)
-                stop_price (float): The price at which this becomes a market order
+                stop_price (Decimal): The price at which this becomes a market order
                 quantity (int): Number of shares to buy
 
             Returns:
@@ -1167,8 +1168,8 @@ class Robinhood:
                 instrument_URL (str): The RH URL of the instrument
                 symbol (str): The ticker symbol of the instrument
                 time_in_force (str): 'GFD' or 'GTC' (day or until cancelled)
-                stop_price (float): The price at which this becomes a limit order
-                price (float): The max price you're willing to pay per share
+                stop_price (Decimal): The price at which this becomes a limit order
+                price (Decimal): The max price you're willing to pay per share
                 quantity (int): Number of shares to buy
 
             Returns:
@@ -1228,7 +1229,7 @@ class Robinhood:
                 instrument_URL (str): The RH URL of the instrument
                 symbol (str): The ticker symbol of the instrument
                 time_in_force (str): 'GFD' or 'GTC' (day or until cancelled)
-                price (float): The minimum price you're willing to get per share
+                price (Decimal): The minimum price you're willing to get per share
                 quantity (int): Number of shares to sell
 
             Returns:
@@ -1259,7 +1260,7 @@ class Robinhood:
                 instrument_URL (str): The RH URL of the instrument
                 symbol (str): The ticker symbol of the instrument
                 time_in_force (str): 'GFD' or 'GTC' (day or until cancelled)
-                stop_price (float): The price at which this becomes a market order
+                stop_price (Decimal): The price at which this becomes a market order
                 quantity (int): Number of shares to sell
 
             Returns:
@@ -1291,8 +1292,8 @@ class Robinhood:
                 instrument_URL (str): The RH URL of the instrument
                 symbol (str): The ticker symbol of the instrument
                 time_in_force (str): 'GFD' or 'GTC' (day or until cancelled)
-                stop_price (float): The price at which this becomes a limit order
-                price (float): The max price you're willing to get per share
+                stop_price (Decimal): The price at which this becomes a limit order
+                price (Decimal): The max price you're willing to get per share
                 quantity (int): Number of shares to sell
 
             Returns:
@@ -1340,8 +1341,8 @@ class Robinhood:
                 time_in_force (:enum:`TIME_IN_FORCE`): GFD or GTC (day or
                                                        until cancelled)
                 trigger (str): IMMEDIATE or STOP enum
-                price (float): The share price you'll accept
-                stop_price (float): The price at which the order becomes a
+                price (Decimal): The share price you'll accept
+                stop_price (Decimal): The price at which the order becomes a
                                     market or limit order
                 quantity (int): The number of shares to buy/sell
                 side (str): BUY or sell
@@ -1408,7 +1409,7 @@ class Robinhood:
                 raise(valueError(
                     'Market order has price limit in call to submit_order'))
 
-        price = float(price)
+        price = Decimal(price)
 
         if(quantity is None):
             raise(valueError('No quantity specified in call to submit_order'))
